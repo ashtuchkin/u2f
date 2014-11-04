@@ -75,7 +75,9 @@ https://github.com/Yubico/python-u2flib-server
 
 ## TODO
 
-* Unpack registration certificate and check its own signature and time constraints.
+ * Provide instructions for client-side. How to get the 'u2f' namespace, what browsers are supported.
+ * Change API to enable multiple keyhandle/publickey pairs for a single user.
+ * Unpack registration certificate and check its own signature and time constraints.
 
 
 # License
