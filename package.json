@@ -1,0 +1,23 @@
+{
+  "name": "u2f",
+  "version": "0.1.0",
+  "description": "U2F 2-factor authentication library",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ashtuchkin/u2f"
+  },
+  "keywords": [
+    "U2F",
+    "2-factor",
+    "authentication"
+  ],
+  "author": "Alexander Shtuchkin <ashtuchkin@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ashtuchkin/u2f/issues"
+  },
+  "homepage": "https://github.com/ashtuchkin/u2f",
+  "devDependencies": {
+    "mocha": "2"
+  }
+}
