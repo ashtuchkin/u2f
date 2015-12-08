@@ -18,7 +18,7 @@ function convertCertToPEM(cert) {
         // }
         // Luckily, to do that, we just need to prefix it with constant 26 bytes (metadata is constant).
         cert = Buffer.concat([
-            new Buffer("3059301306072a8648ce3d020106082a8648ce3d030107034200", "hex"), 
+            new Buffer("3059301306072a8648ce3d020106082a8648ce3d030107034200", "hex"),
             cert]);
 
         type = "PUBLIC KEY";
@@ -26,15 +26,15 @@ function convertCertToPEM(cert) {
         type = "CERTIFICATE";
     }
 
-    // 2. To get PEM string, ASN structure then must be base64-encoded, split to 
+    // 2. To get PEM string, ASN structure then must be base64-encoded, split to
     // lines of 64 chars each and prefixed/postfixed with ---BEGIN/END PUBLIC KEY--- etc.
-    
+
     var pemStr = "-----BEGIN "+type+"-----\n";
     for (var certStr = cert.toString('base64'); certStr.length > 64; certStr = certStr.slice(64))
         pemStr += certStr.slice(0, 64) + '\n';
     pemStr += certStr + '\n';
     pemStr += "-----END "+type+"-----\n";
-        
+
     return pemStr;
 }
 
@@ -93,7 +93,7 @@ function request(appId, keyHandle) {
     var res = {
         version: "U2F_V2",
         appId: appId,
-        challenge: toWebsafeBase64(crypto.pseudoRandomBytes(16))
+        challenge: toWebsafeBase64(crypto.randomBytes(32))
     };
     if (keyHandle)
         res.keyHandle = keyHandle;
@@ -218,7 +218,5 @@ module.exports = {
     // Supplemental API, mostly for testing.
     _hash: hash,
     _checkECDSASignature: checkECDSASignature,
-    _toWebsafeBase64: toWebsafeBase64,    
+    _toWebsafeBase64: toWebsafeBase64,
 }
-
-
