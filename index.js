@@ -1,3 +1,4 @@
+'use strict';
 
 var crypto = require('crypto');
 
@@ -80,23 +81,65 @@ function toWebsafeBase64(buf) {
     return buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-').replace(/=/g, '');
 }
 
+// Build a FIDO challenge
+function buildChallenge(appId, keyHandle) {
+    var challenge = {
+        version: "U2F_V2",
+        appId: appId,
+        challenge: toWebsafeBase64(crypto.randomBytes(32))
+    };
 
+    // keyHandle only required for signing, not registration
+    if(typeof keyHandle !== 'undefined') {
+        challenge.keyHandle = keyHandle;
+    }
+
+    return challenge
+}
 
 //==============================================================================
 // Main API
 
 // Generate request for client. Basically the same for registration and signature, except for the keyHandle.
-function request(appId, keyHandle) {
+function request(appId, keyHandle, options) {
+    var options = options || {};
+
     if (typeof appId !== 'string')
         throw new Error("U2F request(): appId must be provided.");
 
-    var res = {
-        version: "U2F_V2",
-        appId: appId,
-        challenge: toWebsafeBase64(crypto.randomBytes(32))
-    };
-    if (keyHandle)
-        res.keyHandle = keyHandle;
+    var res = {};
+
+    // Registration request has no keyhandle
+    if(typeof keyHandle === 'undefined') {
+
+        // Build registration challenge
+        res = buildChallenge(appId);
+        res.type = "u2f_register_request";
+
+    } else {
+
+        // Build signature object
+        if(Array.isArray(keyHandle)) {
+
+            // Return a multiple key request (required for multiple keys)
+            res.signRequests = [];
+            for(index in keyHandle) {
+                res.signRequests.push(buildChallenge(appId, keyHandle[index]));
+            }
+
+        } else {
+
+            // Return single request (non-compliant hack for backwards compatibiltiy)
+            res = buildChallenge(appId, keyHandle);
+        }
+        res.type = "u2f_sign_request"
+    }
+
+    // Add timeout if specified
+    if(typeof options.timeout !== 'undefined') {
+        res.timeoutSeconds = options.timeout;
+    }
+
     return res;
 }
 
