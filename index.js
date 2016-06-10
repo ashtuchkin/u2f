@@ -110,24 +110,32 @@ function requestRegistration(appId, options) {
 
     // Build registration challenge
     var res = {};
+    res.appId = appId;
     res.type = "u2f_register_request";
     
     // Add registration challenge
     // Note that multiple enrolmenet is viable but not implemented
-    res.RegisterRequest = [buildChallenge(appId)];
+    res.registerRequests = [buildChallenge(appId)];
+
+    res.registeredKeys = [];
 
     // Single existing handle specified
     if(typeof options.keyHandle !== 'undefined') {
-        res.RegisteredKey = [{version: "U2F_V2", keyHandle: keyHandle}]
+        res.registeredKeys = [{version: "U2F_V2", keyHandle: options.keyHandle}]
     }
 
     // Array of existing key handles specified
     if(typeof options.keyHandles !== 'undefined' && Array.isArray(options.keyHandles)) {
-        res.RegisteredKey = [];
         for(index in options.keyHandles) {
-            res.RegisteredKey.push({version: "U2F_V2", keyHandle: options.keyHandle[index]});
+            res.registeredKeys.push({version: "U2F_V2", keyHandle: options.keyHandle[index]});
         }
     }
+
+    // Add request id if specified
+    if(typeof options.requestId !== 'undefined') {
+        res.requestId = options.requestId;
+    }
+
 
     // Add timeout if specified
     if(typeof options.timeoutSeconds !== 'undefined') {
@@ -149,7 +157,8 @@ function requestSignature(appId, keyHandles, options) {
     }
 
     // Build signing challenge
-    var res = {};
+    var res = buildChallenge(appId);
+    res.appId = appId;
     res.type = "u2f_sign_request"
 
     // Build signature object
@@ -158,15 +167,18 @@ function requestSignature(appId, keyHandles, options) {
         // Return a multiple key request (required for multiple keys)
         res.signRequests = [];
         for(index in keyHandles) {
-            res.signRequests.push(buildChallenge(appId, keyHandles[index]));
+            res.registeredKeys.push({version: 'U2F_V2', keyHandle: keyHandles[index]});
         }
 
     } else {
-
-        // Return single request (non-compliant hack for backwards compatibiltiy)
-        res = buildChallenge(appId, keyHandles);
+        // Return single request
+        res.registeredKeys = [{version: 'U2F_V2', keyHandle: keyHandles}];
     }
         
+     // Add request id if specified
+    if(typeof options.requestId !== 'undefined') {
+        res.requestId = options.requestId;
+    }
 
     // Add timeout if specified
     if(typeof options.timeoutSeconds !== 'undefined') {
