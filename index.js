@@ -101,43 +101,76 @@ function buildChallenge(appId, keyHandle) {
 // Main API
 
 // Generate request for client. Basically the same for registration and signature, except for the keyHandle.
-function request(appId, keyHandle, options) {
+function requestRegistration(appId, options) {
     var options = options || {};
 
-    if (typeof appId !== 'string')
+    if (typeof appId !== 'string') {
         throw new Error("U2F request(): appId must be provided.");
+    }
 
+    // Build registration challenge
     var res = {};
+    res.type = "u2f_register_request";
+    
+    // Add registration challenge
+    // Note that multiple enrolmenet is viable but not implemented
+    res.RegisterRequest = [buildChallenge(appId)];
 
-    // Registration request has no keyhandle
-    if(typeof keyHandle === 'undefined') {
+    // Single existing handle specified
+    if(typeof options.keyHandle !== 'undefined') {
+        res.RegisteredKey = [{version: "U2F_V2", keyHandle: keyHandle}]
+    }
 
-        // Build registration challenge
-        res = buildChallenge(appId);
-        res.type = "u2f_register_request";
-
-    } else {
-
-        // Build signature object
-        if(Array.isArray(keyHandle)) {
-
-            // Return a multiple key request (required for multiple keys)
-            res.signRequests = [];
-            for(index in keyHandle) {
-                res.signRequests.push(buildChallenge(appId, keyHandle[index]));
-            }
-
-        } else {
-
-            // Return single request (non-compliant hack for backwards compatibiltiy)
-            res = buildChallenge(appId, keyHandle);
+    // Array of existing key handles specified
+    if(typeof options.keyHandles !== 'undefined' && Array.isArray(options.keyHandles)) {
+        res.RegisteredKey = [];
+        for(index in options.keyHandles) {
+            res.RegisteredKey.push({version: "U2F_V2", keyHandle: options.keyHandle[index]});
         }
-        res.type = "u2f_sign_request"
     }
 
     // Add timeout if specified
-    if(typeof options.timeout !== 'undefined') {
-        res.timeoutSeconds = options.timeout;
+    if(typeof options.timeoutSeconds !== 'undefined') {
+        res.timeoutSeconds = options.timeoutSeconds;
+    }
+
+    return res;
+}
+
+function requestSignature(appId, keyHandles, options) {
+    var options = options || {};
+
+    if (typeof appId !== 'string') {
+        throw new Error("U2F request(): appId must be provided.");
+    }
+
+    if (typeof keyHandles !== 'string' && !Array.isArray(keyHandles)) {
+        throw new Error("U2F request(): keyHandle[s] must be provided");
+    }
+
+    // Build signing challenge
+    var res = {};
+    res.type = "u2f_sign_request"
+
+    // Build signature object
+    if(Array.isArray(keyHandles)) {
+
+        // Return a multiple key request (required for multiple keys)
+        res.signRequests = [];
+        for(index in keyHandles) {
+            res.signRequests.push(buildChallenge(appId, keyHandles[index]));
+        }
+
+    } else {
+
+        // Return single request (non-compliant hack for backwards compatibiltiy)
+        res = buildChallenge(appId, keyHandles);
+    }
+        
+
+    // Add timeout if specified
+    if(typeof options.timeoutSeconds !== 'undefined') {
+        res.timeoutSeconds = options.timeoutSeconds;
     }
 
     return res;
@@ -254,8 +287,9 @@ function checkSignature(request, signResult, publicKey) {
 // Set up appId as a convenience.
 module.exports = {
     // Main API
-    request: request,
+    requestRegistration: requestRegistration,
     checkRegistration: checkRegistration,
+    requestSignature: requestSignature,
     checkSignature: checkSignature,
 
     // Supplemental API, mostly for testing.

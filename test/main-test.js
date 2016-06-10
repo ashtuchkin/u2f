@@ -39,7 +39,12 @@ describe("FIDO Specification v1.0-rd-20141008", function () {
             assert.equal(u2flib._hash(clientData).toString('hex'), "4142d21c00d94ffb9d504ada8f99b721f4b191ae4e37ca0140f696b6983cfacb");
             assert.equal(u2flib._hash(appId).toString('hex'), "f0e6a6a97042a4f1f1c87f5f7d44315b2d852c2df5c7991cc66241bf7072d1c4");
 
-            var request = u2flib.request(appId);
+            var request = u2flib.requestRegistration(appId);
+            // Convert multiple key request to single response
+            for(var key in request.RegisterRequest[0]) {
+                request[key] = request.RegisterRequest[0][key];
+            }
+
             request.challenge = "vqrS6WXDe1JUs5_c3i4-LkKIHRr-3XVb3azuA5TifHo"; // We have a fixed challenge.
 
             var result = {
@@ -66,7 +71,7 @@ describe("FIDO Specification v1.0-rd-20141008", function () {
             assert.equal(u2flib._hash(clientData).toString('hex'), "ccd6ee2e47baef244d49a222db496bad0ef5b6f93aa7cc4d30c4821b3b9dbc57");
             assert.equal(u2flib._hash(appId).toString('hex'), "4b0be934baebb5d12d26011b69227fa5e86df94e7d94aa2949a89f2d493992ca");
 
-            var request = u2flib.request(appId, '');
+            var request = u2flib.requestSignature(appId, '');
             request.challenge = "opsXqUifDriAAmWclinfbS0e-USY0CgyJHe_Otd7z8o"; // We have a fixed challenge.
 
             var signResult = {
