@@ -61,8 +61,9 @@ function hash(data) {
 // See http://en.wikipedia.org/wiki/X.690
 // Only SEQUENCE top-level identifier is supported (which covers all certs luckily)
 function asnLen(buf) {
-    if (buf.length < 2 || buf[0] != 0x30)
+    if (buf.length < 2 || buf[0] != 0x30) {
         throw new Error("Invalid data: Not a SEQUENCE ASN/DER structure");
+    }
 
     var len = buf[1];
     if (len & 0x80) { // long form
@@ -126,8 +127,8 @@ function requestRegistration(appId, options) {
 
     // Array of existing key handles specified
     if(typeof options.keyHandles !== 'undefined' && Array.isArray(options.keyHandles)) {
-        for(index in options.keyHandles) {
-            res.registeredKeys.push({version: "U2F_V2", keyHandle: options.keyHandle[index]});
+        for(var index in options.keyHandles) {
+            res.registeredKeys.push({version: "U2F_V2", keyHandle: options.keyHandles[index]});
         }
     }
 
@@ -165,14 +166,20 @@ function requestSignature(appId, keyHandles, options) {
     if(Array.isArray(keyHandles)) {
 
         // Return a multiple key request (required for multiple keys)
-        res.signRequests = [];
-        for(index in keyHandles) {
+        res.registeredKeys = [];
+        for(var index in keyHandles) {
+            var currentHandle = keyHandles[index];
+            if(typeof currentHandle !== 'string') {
+                throw new Error("U2F request():keyHandle[s] must be strings")
+            }
             res.registeredKeys.push({version: 'U2F_V2', keyHandle: keyHandles[index]});
         }
 
-    } else {
+    } else if(typeof keyHandles === 'string') {
         // Return single request
         res.registeredKeys = [{version: 'U2F_V2', keyHandle: keyHandles}];
+    } else {
+        throw new Error("U2F request():keyHandle[s] must be a string or an array of strings");
     }
         
      // Add request id if specified
@@ -267,6 +274,7 @@ function checkSignature(request, signResult, publicKey) {
     catch (e) {
         return {errorMessage: "Invalid clientData: not a valid JSON object"}
     }
+
     if (clientDataObj.challenge !== request.challenge)
         return {errorMessage: "Invalid challenge: not the one provided"};
 
