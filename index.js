@@ -198,8 +198,6 @@ function requestSignature(appId, keyHandles, options) {
 // request: {version, appId, challenge} - from user session, kept on server.
 // registerData: {clientData, registrationData} - result of u2f.register
 function checkRegistration(request, registerData) {
-    console.log("CheckRegistration request:")
-    console.log(request);
     if (typeof request !== 'object') {
         return {errorMessage: "Invalid request object"};
     }
