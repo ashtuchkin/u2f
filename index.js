@@ -83,10 +83,9 @@ function toWebsafeBase64(buf) {
 }
 
 // Build a FIDO challenge
-function buildChallenge(appId, keyHandle) {
+function buildChallenge(keyHandle) {
     var challenge = {
         version: "U2F_V2",
-        appId: appId,
         challenge: toWebsafeBase64(crypto.randomBytes(32))
     };
 
@@ -116,7 +115,7 @@ function requestRegistration(appId, options) {
     
     // Add registration challenge
     // Note that multiple enrolmenet is viable but not implemented
-    res.registerRequests = [buildChallenge(appId)];
+    res.registerRequests = [buildChallenge()];
 
     res.registeredKeys = [];
 
@@ -158,7 +157,7 @@ function requestSignature(appId, keyHandles, options) {
     }
 
     // Build signing challenge
-    var res = buildChallenge(appId);
+    var res = buildChallenge();
     res.appId = appId;
     res.type = "u2f_sign_request"
 

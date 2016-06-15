@@ -46,7 +46,6 @@ describe("FIDO Specification v1.0-rd-20141008", function () {
             // Check registration fields
             assert.equal(request.appId, appId);
             assert.equal(request.type, 'u2f_register_request');
-            assert.equal(request.registerRequests[0].appId, appId);
             assert.equal(request.registerRequests[0].version, 'U2F_V2');
             assert.equal(request.timeoutSeconds, options.timeoutSeconds);
             assert.equal(request.requestId, options.requestId);
