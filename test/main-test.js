@@ -51,12 +51,8 @@ describe("FIDO Specification v1.0-rd-20141008", function () {
             assert.equal(request.requestId, options.requestId);
             assert.equal(request.registeredKeys[0].keyHandle, options.keyHandle);
 
-            // Convert multiple key request to single response (client only returns one response)
-            for(var key in request.registerRequests[0]) {
-                request[key] = request.registerRequests[0][key];
-            }
-
-            request.challenge = "vqrS6WXDe1JUs5_c3i4-LkKIHRr-3XVb3azuA5TifHo"; // We have a fixed challenge.
+            // Static registration key
+            request.registerRequests[0].challenge = "vqrS6WXDe1JUs5_c3i4-LkKIHRr-3XVb3azuA5TifHo"; // We have a fixed challenge.
 
             var result = {
                 clientData: u2flib._toWebsafeBase64(new Buffer(clientData)),

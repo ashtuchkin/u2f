@@ -198,8 +198,14 @@ function requestSignature(appId, keyHandles, options) {
 // request: {version, appId, challenge} - from user session, kept on server.
 // registerData: {clientData, registrationData} - result of u2f.register
 function checkRegistration(request, registerData) {
-    if (typeof registerData !== 'object')
+    console.log("CheckRegistration request:")
+    console.log(request);
+    if (typeof request !== 'object') {
+        return {errorMessage: "Invalid request object"};
+    }
+    if (typeof registerData !== 'object') {
         return {errorMessage: "Invalid response from U2F token."};
+    }
 
     // Check registration error
     if (registerData.errorCode)
@@ -216,7 +222,9 @@ function checkRegistration(request, registerData) {
     catch (e) {
         return {errorMessage: "Invalid clientData: not a valid JSON object"}
     }
-    if (clientDataObj.challenge !== request.challenge)
+
+    var challenge = request.registerRequests[0].challenge;
+    if (clientDataObj.challenge !== challenge)
         return {errorMessage: "Invalid challenge: not the one provided"};
 
     // Parse registrationData.
@@ -255,8 +263,12 @@ function checkRegistration(request, registerData) {
 // signResult: {clientData, signatureData} - result of u2f.sign on client.
 // publicKey: string from user account.
 function checkSignature(request, signResult, publicKey) {
-    if (typeof signResult !== 'object')
+    if (typeof request !== 'object') {
+        return {errorMessage: "Invalid request object"};
+    }
+    if (typeof signResult !== 'object') {
         return {errorMessage: "Invalid response from U2F token."};
+    }
 
     // Check registration error
     if (signResult.errorCode)
