@@ -22,35 +22,33 @@ although basic usage is shown below.
 
 ### User Registration Flow
 
-##### Server endpoint (registration challenge):
+##### Server endpoints:
 
 ```javascript
 const u2f = require('u2f');
 
-function handler(req, res) {
+// The app ID is a string used to uniquely identify your U2F app, for both registration requests and
+// authentication requests. It is usually the fully qualified URL of your website. The website MUST
+// be HTTPS, otherwise the registration will fail client-side.
+const APP_ID = ...
+
+function registrationChallengeHandler(req, res) {
   // 1. Check that the user is logged in.
 
   // 2. Generate a registration request and save it in the session.
-  // The app ID is usually the fully qualified URL of your website. The website MUST be HTTPS, or
-  // else the registration will fail client-side.
-  const registrationReq = u2f.request('<appId>');
-  req.session.registrationReq = registrationReq;
+  const registrationRequest = u2f.request(APP_ID);
+  req.session.registrationRequest = registrationRequest;
 
   // 3. Send the registration request to the client, who will use the Javascript U2F API to sign
-  // the registration request, and send it back to the server for verification.
-  return res.send(registrationReq);
+  // the registration request, and send it back to the server for verification. The registration
+  // request is a JSON object containing properties used by the client to sign the request.
+  return res.send(registrationRequest);
 }
-```
 
-##### Server endpoint (registration verification):
-
-```javascript
-const u2f = require('u2f');
-
-function handler(req, res) {
+function registrationVerificationHandler(req, res) {
   // 4. Verify the registration response from the client against the registration request saved
   // in the server-side session.
-  const result = u2f.checkRegistration(req.session.registrationReq, req.body.registrationRes);
+  const result = u2f.checkRegistration(req.session.registrationRequest, req.body.registrationResponse);
 
   if (result.successful) {
     // Success!
@@ -69,23 +67,22 @@ function handler(req, res) {
 Note that the `window.u2f` object is defined in the official [Javascript U2F API](https://github.com/google/u2f-ref-code), for which a polyfill is [available as an npm module](https://www.npmjs.com/package/u2f-api-polyfill).
 
 ```javascript
-const registrationReq = ...  // Retrieve this from hitting the registration challenge endpoint
-const {appId, version, challenge} = registrationReq;
+const registrationRequest = ...  // Retrieve this from hitting the registration challenge endpoint
 
-window.u2f.register(appId, [{version, challenge}], [], (registrationRes) => {
+window.u2f.register(registrationRequest.appId, [registrationRequest], [], (registrationResponse) => {
   // Send this registration response to the registration verification server endpoint
 });
 ```
 
 ### User Authentication Flow
 
-##### Server endpoint (authentication challenge):
+##### Server endpoints:
 
 ```javascript
 const u2f = require('u2f');
 
-function handler(req, res) {
-  // 1. Check that the user is logged in.
+function authenticationChallengeHandler(req, res) {
+  // 1. Check that the user is logged in using password authentication.
 
   // 2. Fetch the user's key handle from the server-side datastore. This field should have been
   // saved after the registration procedure.
@@ -93,24 +90,18 @@ function handler(req, res) {
 
   // 3. Generate an authentication request and save it in the session. Use the same app ID that
   // was used in registration!
-  const authReq = u2f.request('<appId>', keyHandle);
-  req.session.authReq = authReq;
+  const authRequest = u2f.request(APP_ID, keyHandle);
+  req.session.authRequest = authRequest;
 
   // 4. Send the authentication request to the client, who will use the Javascript U2F API to sign
   // the authentication request, and send it back to the server for verification.
-  return res.send(authReq);
+  return res.send(authRequest);
 }
-```
 
-##### Server endpoint (authentication verification):
-
-```javascript
-const u2f = require('u2f');
-
-function handler(req, res) {
+function authenticationVerificationHandler(req, res) {
   // 4. Verify the authentication response from the client against the authentication request saved
   // in the server-side session.
-  const result = u2f.checkSignature(req.session.authReq, req.body.authRes);
+  const result = u2f.checkSignature(req.session.authRequest, req.body.authResponse);
 
   if (result.successful) {
     // Success!
@@ -126,10 +117,9 @@ function handler(req, res) {
 ##### Client logic:
 
 ```javascript
-const authReq = ...;  // Retrieve this from hitting the authentication challenge endpoint
-const {appId, challenge, version, keyHandle} = authReq;
+const authRequest = ...;  // Retrieve this from hitting the authentication challenge endpoint
 
-window.u2f.sign(appId, challenge, [{version, keyHandle}], (authRes) => {
+window.u2f.sign(authRequest.appId, challenge, [authRequest], (authResponse) => {
   // Send this authentication response to the authentication verification server endpoint
 });
 ```
