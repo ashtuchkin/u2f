@@ -99,9 +99,13 @@ function authenticationChallengeHandler(req, res) {
 }
 
 function authenticationVerificationHandler(req, res) {
-  // 4. Verify the authentication response from the client against the authentication request saved
+  // 5. Fetch the user's public key from the server-side datastore. This field should have been
+  // saved after the registration procedure.
+  const publicKey = ...
+
+  // 6. Verify the authentication response from the client against the authentication request saved
   // in the server-side session.
-  const result = u2f.checkSignature(req.session.authRequest, req.body.authResponse);
+  const result = u2f.checkSignature(req.session.authRequest, req.body.authResponse, publicKey);
 
   if (result.successful) {
     // Success!
