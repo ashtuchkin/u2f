@@ -1,3 +1,4 @@
+'use strict';
 
 var crypto = require('crypto');
 
@@ -60,8 +61,9 @@ function hash(data) {
 // See http://en.wikipedia.org/wiki/X.690
 // Only SEQUENCE top-level identifier is supported (which covers all certs luckily)
 function asnLen(buf) {
-    if (buf.length < 2 || buf[0] != 0x30)
+    if (buf.length < 2 || buf[0] != 0x30) {
         throw new Error("Invalid data: Not a SEQUENCE ASN/DER structure");
+    }
 
     var len = buf[1];
     if (len & 0x80) { // long form
@@ -80,23 +82,115 @@ function toWebsafeBase64(buf) {
     return buf.toString('base64').replace(/\//g,'_').replace(/\+/g,'-').replace(/=/g, '');
 }
 
+// Build a FIDO challenge
+function buildChallenge(keyHandle) {
+    var challenge = {
+        version: "U2F_V2",
+        challenge: toWebsafeBase64(crypto.randomBytes(32))
+    };
 
+    // keyHandle only required for signing, not registration
+    if(typeof keyHandle !== 'undefined') {
+        challenge.keyHandle = keyHandle;
+    }
+
+    return challenge
+}
 
 //==============================================================================
 // Main API
 
 // Generate request for client. Basically the same for registration and signature, except for the keyHandle.
-function request(appId, keyHandle) {
-    if (typeof appId !== 'string')
-        throw new Error("U2F request(): appId must be provided.");
+function requestRegistration(appId, options) {
+    var options = options || {};
 
-    var res = {
-        version: "U2F_V2",
-        appId: appId,
-        challenge: toWebsafeBase64(crypto.randomBytes(32))
-    };
-    if (keyHandle)
-        res.keyHandle = keyHandle;
+    if (typeof appId !== 'string') {
+        throw new Error("U2F request(): appId must be provided.");
+    }
+
+    // Build registration challenge
+    var res = {};
+    res.appId = appId;
+    res.type = "u2f_register_request";
+    
+    // Add registration challenge
+    // Note that multiple enrolmenet is viable but not implemented
+    res.registerRequests = [buildChallenge()];
+
+    res.registeredKeys = [];
+
+    // Single existing handle specified
+    if(typeof options.keyHandle !== 'undefined') {
+        res.registeredKeys = [{version: "U2F_V2", keyHandle: options.keyHandle}]
+    }
+
+    // Array of existing key handles specified
+    if(typeof options.keyHandles !== 'undefined' && Array.isArray(options.keyHandles)) {
+        for(var index in options.keyHandles) {
+            res.registeredKeys.push({version: "U2F_V2", keyHandle: options.keyHandles[index]});
+        }
+    }
+
+    // Add request id if specified
+    if(typeof options.requestId !== 'undefined') {
+        res.requestId = options.requestId;
+    }
+
+
+    // Add timeout if specified
+    if(typeof options.timeoutSeconds !== 'undefined') {
+        res.timeoutSeconds = options.timeoutSeconds;
+    }
+
+    return res;
+}
+
+function requestSignature(appId, keyHandles, options) {
+    var options = options || {};
+
+    if (typeof appId !== 'string') {
+        throw new Error("U2F request(): appId must be provided.");
+    }
+
+    if (typeof keyHandles !== 'string' && !Array.isArray(keyHandles)) {
+        throw new Error("U2F request(): keyHandle[s] must be provided");
+    }
+
+    // Build signing challenge
+    var res = buildChallenge();
+    res.appId = appId;
+    res.type = "u2f_sign_request"
+
+    // Build signature object
+    if(Array.isArray(keyHandles)) {
+
+        // Return a multiple key request (required for multiple keys)
+        res.registeredKeys = [];
+        for(var index in keyHandles) {
+            var currentHandle = keyHandles[index];
+            if(typeof currentHandle !== 'string') {
+                throw new Error("U2F request():keyHandle[s] must be strings")
+            }
+            res.registeredKeys.push({version: 'U2F_V2', keyHandle: keyHandles[index]});
+        }
+
+    } else if(typeof keyHandles === 'string') {
+        // Return single request
+        res.registeredKeys = [{version: 'U2F_V2', keyHandle: keyHandles}];
+    } else {
+        throw new Error("U2F request():keyHandle[s] must be a string or an array of strings");
+    }
+        
+     // Add request id if specified
+    if(typeof options.requestId !== 'undefined') {
+        res.requestId = options.requestId;
+    }
+
+    // Add timeout if specified
+    if(typeof options.timeoutSeconds !== 'undefined') {
+        res.timeoutSeconds = options.timeoutSeconds;
+    }
+
     return res;
 }
 
@@ -104,8 +198,12 @@ function request(appId, keyHandle) {
 // request: {version, appId, challenge} - from user session, kept on server.
 // registerData: {clientData, registrationData} - result of u2f.register
 function checkRegistration(request, registerData) {
-    if (typeof registerData !== 'object')
+    if (typeof request !== 'object') {
+        return {errorMessage: "Invalid request object"};
+    }
+    if (typeof registerData !== 'object') {
         return {errorMessage: "Invalid response from U2F token."};
+    }
 
     // Check registration error
     if (registerData.errorCode)
@@ -122,7 +220,9 @@ function checkRegistration(request, registerData) {
     catch (e) {
         return {errorMessage: "Invalid clientData: not a valid JSON object"}
     }
-    if (clientDataObj.challenge !== request.challenge)
+
+    var challenge = request.registerRequests[0].challenge;
+    if (clientDataObj.challenge !== challenge)
         return {errorMessage: "Invalid challenge: not the one provided"};
 
     // Parse registrationData.
@@ -161,8 +261,12 @@ function checkRegistration(request, registerData) {
 // signResult: {clientData, signatureData} - result of u2f.sign on client.
 // publicKey: string from user account.
 function checkSignature(request, signResult, publicKey) {
-    if (typeof signResult !== 'object')
+    if (typeof request !== 'object') {
+        return {errorMessage: "Invalid request object"};
+    }
+    if (typeof signResult !== 'object') {
         return {errorMessage: "Invalid response from U2F token."};
+    }
 
     // Check registration error
     if (signResult.errorCode)
@@ -179,6 +283,7 @@ function checkSignature(request, signResult, publicKey) {
     catch (e) {
         return {errorMessage: "Invalid clientData: not a valid JSON object"}
     }
+
     if (clientDataObj.challenge !== request.challenge)
         return {errorMessage: "Invalid challenge: not the one provided"};
 
@@ -211,8 +316,9 @@ function checkSignature(request, signResult, publicKey) {
 // Set up appId as a convenience.
 module.exports = {
     // Main API
-    request: request,
+    requestRegistration: requestRegistration,
     checkRegistration: checkRegistration,
+    requestSignature: requestSignature,
     checkSignature: checkSignature,
 
     // Supplemental API, mostly for testing.

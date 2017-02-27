@@ -19,5 +19,8 @@
   "homepage": "https://github.com/ashtuchkin/u2f",
   "devDependencies": {
     "mocha": "2"
+  },
+  "scripts": {
+    "test": "mocha"
   }
 }
