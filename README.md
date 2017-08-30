@@ -4,7 +4,7 @@ This is a simple library to register and check signatures provided by U2F client
 It's intended to be used in Relying Parties - websites that want to add U2F 2-factor authentication
 for their users.
 
-To use U2F, it is recommended to familiarize yourself with [FIDO Alliance Specifications](https://fidoalliance.org/specifications/download/),
+To use U2F, it is recommended to familiarize yourself with [FIDO Alliance Specifications](https://fidoalliance.org/download/),
 although basic usage is shown below.
 
 ## U2F Overview/properties
