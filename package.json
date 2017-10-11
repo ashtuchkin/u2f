@@ -1,6 +1,6 @@
 {
   "name": "u2f",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "U2F 2-factor authentication library",
   "repository": {
     "type": "git",
