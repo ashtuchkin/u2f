@@ -108,7 +108,7 @@ function checkRegistration(request, registerData) {
         return {errorMessage: "Invalid response from U2F token."};
 
     // Check registration error
-    if (registerData.errorCode)
+    if (registerData.errorCode && registerData.errorCode != 0)
         return {
             errorMessage: registerData.errorMessage || "Error registering U2F token.",
             errorCode: registerData.errorCode,
@@ -165,7 +165,7 @@ function checkSignature(request, signResult, publicKey) {
         return {errorMessage: "Invalid response from U2F token."};
 
     // Check registration error
-    if (signResult.errorCode)
+    if (signResult.errorCode && signResult.errorCode != 0)
         return {
             errorMessage: signResult.errorMessage || "Error getting signature from U2F token.",
             errorCode: signResult.errorCode,
