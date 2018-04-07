@@ -6,6 +6,9 @@
     "type": "git",
     "url": "https://github.com/ashtuchkin/u2f"
   },
+  "scripts": {
+    "test": "mocha test"
+  },
   "keywords": [
     "U2F",
     "2-factor",
