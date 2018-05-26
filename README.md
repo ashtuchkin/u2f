@@ -123,7 +123,7 @@ function authenticationVerificationHandler(req, res) {
 ```javascript
 const authRequest = ...;  // Retrieve this from hitting the authentication challenge endpoint
 
-window.u2f.sign(authRequest.appId, challenge, [authRequest], (authResponse) => {
+window.u2f.sign(authRequest.appId, authRequest.challenge, [authRequest], (authResponse) => {
   // Send this authentication response to the authentication verification server endpoint
 });
 ```
