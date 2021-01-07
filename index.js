@@ -18,7 +18,7 @@ function convertCertToPEM(cert) {
         // }
         // Luckily, to do that, we just need to prefix it with constant 26 bytes (metadata is constant).
         cert = Buffer.concat([
-            new Buffer("3059301306072a8648ce3d020106082a8648ce3d030107034200", "hex"),
+            new Buffer.from("3059301306072a8648ce3d020106082a8648ce3d030107034200", "hex"),
             cert]);
 
         type = "PUBLIC KEY";
@@ -115,7 +115,7 @@ function checkRegistration(request, registerData) {
         };
 
     // Unpack and check clientData, challenge.
-    var clientData = new Buffer(registerData.clientData, 'base64');
+    var clientData = new Buffer.from(registerData.clientData, 'base64');
     try {
         var clientDataObj = JSON.parse(clientData.toString('utf8'));
     }
@@ -126,7 +126,7 @@ function checkRegistration(request, registerData) {
         return {errorMessage: "Invalid challenge: not the one provided"};
 
     // Parse registrationData.
-    var buf = new Buffer(registerData.registrationData, 'base64');
+    var buf = new Buffer.from(registerData.registrationData, 'base64');
     var reserved = buf[0];                       buf = buf.slice(1);
     var publicKey = buf.slice(0, 65);            buf = buf.slice(65);
     var keyHandleLen = buf[0];                   buf = buf.slice(1);
@@ -138,7 +138,7 @@ function checkRegistration(request, registerData) {
     if (buf.length !== 0)
         console.error("U2F Registration Warning: registrationData has extra bytes: "+buf.toString('hex'));
 
-    var reservedByte = new Buffer('00', 'hex');
+    var reservedByte = new Buffer.from('00', 'hex');
     var appIdHash = hash(request.appId);
     var clientDataHash = hash(clientData);
 
@@ -172,7 +172,7 @@ function checkSignature(request, signResult, publicKey) {
         };
 
     // Unpack and check clientData, challenge.
-    var clientData = new Buffer(signResult.clientData, 'base64');
+    var clientData = new Buffer.from(signResult.clientData, 'base64');
     try {
         var clientDataObj = JSON.parse(clientData.toString('utf8'));
     }
@@ -183,7 +183,7 @@ function checkSignature(request, signResult, publicKey) {
         return {errorMessage: "Invalid challenge: not the one provided"};
 
     // Parse signatureData
-    var buf = new Buffer(signResult.signatureData, 'base64');
+    var buf = new Buffer.from(signResult.signatureData, 'base64');
     var userPresenceFlag = buf.slice(0, 1);    buf = buf.slice(1);
     var counter = buf.slice(0, 4);             buf = buf.slice(4);
     var signLen = asnLen(buf);
@@ -195,7 +195,7 @@ function checkSignature(request, signResult, publicKey) {
     var clientDataHash = hash(clientData);
 
     var signatureBase = Buffer.concat([appIdHash, userPresenceFlag, counter, clientDataHash]);
-    var cert = new Buffer(publicKey, 'base64');
+    var cert = new Buffer.from(publicKey, 'base64');
 
     if (checkECDSASignature(signatureBase, cert, signature))
         return {
