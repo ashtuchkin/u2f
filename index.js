@@ -46,7 +46,8 @@ function checkECDSASignature(data, cert, signature) {
     if (!Buffer.isBuffer(signature) || asnLen(signature) != signature.length)
         throw new Error("checkSignature: signature must be buffer of valid ASN/DER structure.");
 
-    return crypto.createVerify("RSA-SHA256") // The actual signature alg is ECDSA and determined
+    // Use digest-only identifier; avoids misleading RSA naming and OpenSSL alias dependence
+    return crypto.createVerify("sha256")
             .update(data)                    // by ASN/DER data in public key. SHA256 is what we set here.
             .verify(convertCertToPEM(cert), signature);
 }
